@@ -33,10 +33,21 @@ class VisitorManager:
         return unique_day_visitor, unique_month_visitor, unique_year_visitor
 
     def clear_old_visitors(self):
+        to_del = set()
         for visitor in self.unique_day_visitors:
             if visitor[1] != datetime.datetime.now().date():
-                self.unique_day_visitors.remove(visitor)
-
+                to_del.add(visitor)
+        for el in to_del:
+            self.unique_day_visitors.remove(el)
+        to_del.clear()
         for visitor in self.unique_month_visitors:
             if visitor[1] != datetime.datetime.now().month:
-                self.unique_month_visitors.remove(visitor)
+                to_del.add(visitor)
+        for el in to_del:
+            self.unique_month_visitors.remove(el)
+        to_del.clear()
+        for visitor in self.unique_year_visitors:
+            if visitor[1] != datetime.datetime.now().year:
+                to_del.add(visitor)
+        for el in to_del:
+            self.unique_year_visitors.remove(el)
