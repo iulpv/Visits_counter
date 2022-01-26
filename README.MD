@@ -11,6 +11,6 @@ flask run
 
 - http://127.0.0.1:5000/stat_by_day
 
-- http://127.0.0.1:5000/by_month
+- http://127.0.0.1:5000/stat_by_month
 
-- http://127.0.0.1:5000/by_year
+- http://127.0.0.1:5000/stat_by_year
