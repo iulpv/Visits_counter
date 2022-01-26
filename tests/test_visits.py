@@ -1,57 +1,51 @@
 import datetime
-from db_context import session, DayStatistic, MonthStatistic, YearsStatistic
-from visitors import VisitorManager
-from db_operations import update_statistic
+import pytest
+from app.visitor_manager import VisitorManager
+from app.db_context import DbContext, Visits
+from app import check_ip
+
+
+def test_add_bd():
+    v = VisitorManager()
+    ip = '1.1.1.1'
+    v.handle_visitor(ip)
+    with DbContext() as session:
+        date = datetime.datetime(2022, 1, 26)
+        visit = session.query(Visits).filter(Visits.ip == ip, Visits.date == date.date()).first()
+        assert visit is not None
+        session.delete(visit)
 
 
 def test_day_visits():
-    update_statistic()
-    query = session.query(DayStatistic).filter(
-        DayStatistic.date == datetime.datetime.now().date()).first()
-    vis = query.visits
-    manager = VisitorManager()
-    ip = '0.0.0.0'
-    manager.handle_visitor(ip)
-    assert query.visits != vis
+    v = VisitorManager()
+    stat = v.take_statistic(by_day=True)
+    ip = '1.1.1.1'
+    date = datetime.datetime(2022, 1, 26).date()
+    v.handle_visitor(ip)
+    stat2 = v.take_statistic(by_day=True)
+    assert stat[str(date)] != stat2[str(date)]
 
 
 def test_month_visits():
-    update_statistic()
-    month = datetime.datetime.now().month
-    query = session.query(MonthStatistic).filter(
-        MonthStatistic.month == str(month)).first()
-    vis = query.visits
-    manager = VisitorManager()
-    ip = '0.0.0.0'
-    manager.handle_visitor(ip)
-    assert query.visits != vis
+    v = VisitorManager()
+    stat = v.take_statistic(by_month=True)
+    ip = '1.1.1.1'
+    date = datetime.datetime(2022, 1, 26).date().month
+    v.handle_visitor(ip)
+    stat2 = v.take_statistic(by_month=True)
+    assert stat[str(date)] != stat2[str(date)]
 
 
 def test_year_visits():
-    update_statistic()
-    year = datetime.datetime.now().year
-    query = session.query(YearsStatistic).filter(
-        YearsStatistic.year == str(year)).first()
-    vis = query.visits
-    manager = VisitorManager()
-    ip = '0.0.0.0'
-    manager.handle_visitor(ip)
-    assert query.visits != vis
+    v = VisitorManager()
+    stat = v.take_statistic(by_year=True)
+    ip = '1.1.1.1'
+    date = datetime.datetime(2022, 1, 26).date().year
+    v.handle_visitor(ip)
+    stat2 = v.take_statistic(by_year=True)
+    assert stat[str(date)] != stat2[str(date)]
 
 
-def test_add_unique_visitors():
-    manager = VisitorManager()
-    ip = '0.0.0.0'
-    manager.handle_visitor(ip)
-    assert len(manager.unique_day_visitors) != 0
-
-
-def test_del_last_day_visitors():
-    manager = VisitorManager()
-    manager.unique_day_visitors.add(("0.0.0.0", datetime.datetime(2022, 1, 24)))
-    a = ("0.0.0.0", datetime.datetime(2022, 1, 24)) in manager.unique_day_visitors
-    manager.clear_old_visitors()
-    b = ("0.0.0.0", datetime.datetime(2022, 1, 24)) in manager.unique_day_visitors
-    assert a != b
-
-
+def test_check_ip():
+    ip = check_ip('12234.2.1.')
+    assert ip != True
