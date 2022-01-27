@@ -1,40 +1,37 @@
+import datetime
 from collections import defaultdict
-
+from sqlalchemy import select, funcfilter
 from app.db_context import DbContext, Visits
+from sqlalchemy.sql import extract
 
 
 class VisitsStatistic:
     def day_statistic(self):
-        unique_visitors, all_visitors = self._load_db_data()
-        days = defaultdict(list)
-        for el in unique_visitors:
-            days[str(el[1])] = [len(list(filter(lambda item: item[1] == el[1], unique_visitors))),
-                                len(list(filter(lambda item: item[1] == el[1], all_visitors)))
-                                ]
-
-        return days
+        day_filter = lambda x: Visits.date == x[0]
+        f = lambda y: y
+        return self.stat(day_filter, f)
 
     def month_statistic(self):
-        unique_visitors, all_visitors = self._load_db_data()
-        months = defaultdict(list)
-        for el in unique_visitors:
-            months[str(el[1].month)] = [len(list(filter(lambda item: item[1].month == el[1].month, unique_visitors))),
-                                        len(list(filter(lambda item: item[1].month == el[1].month, all_visitors)))
-                                        ]
-
-        return months
+        month_filter = lambda x: extract('month', Visits.date) == x[0].month
+        f = lambda y: y.month
+        return self.stat(month_filter, f)
 
     def year_statistic(self):
-        unique_visitors, all_visitors = self._load_db_data()
-        years = defaultdict(list)
-        for el in unique_visitors:
-            years[str(el[1].year)] = [len(list(filter(lambda item: item[1].year == el[1].year, unique_visitors))),
-                                      len(list(filter(lambda item: item[1].year == el[1].year, all_visitors)))
-                                      ]
-        return years
+        year_filter = lambda x: extract('year', Visits.date) == x[0].year
+        f = lambda y: y.year
+        return self.stat(year_filter, f)
 
-    def _load_db_data(self):
+    def stat(self, my_filter, for_date):
+        stat = dict()
         with DbContext() as session:
-            unique_visitors = session.query(Visits.ip, Visits.date).distinct().all()
-            all_visitors = session.query(Visits.ip, Visits.date).all()
-        return unique_visitors, all_visitors
+            for date in self.take_db_dates():
+                response_all = session.query(Visits.ip).filter(my_filter(date)).count()
+                response_unique = session.query(Visits.ip).filter(my_filter(date)).distinct().count()
+                stat[str(for_date(date[0]))] = ['все пользователи:' + str(response_all),
+                                                'уникальные:' + str(response_unique)]
+
+        return stat
+
+    def take_db_dates(self):
+        with DbContext() as session:
+            return session.query(Visits.date).distinct().all()
